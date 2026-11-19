@@ -1288,10 +1288,12 @@ export function calculateInheritance(
         const virtualParentMap = new Map<string, { parentGender: 'male' | 'female'; side: string; children: HeirDetail[] }>();
         activeNephewsNieces.forEach(nn => {
           const parentInfo = getNephewParentType(nn.type);
-          if (!virtualParentMap.has(parentInfo.parentType)) {
-            virtualParentMap.set(parentInfo.parentType, { children: [], parentGender: parentInfo.parentGender, side: parentInfo.side });
+          const parentNameStr = nn.parentName ? nn.parentName.trim() : '';
+          const parentKey = parentNameStr ? `${parentInfo.parentType}::${parentNameStr}` : parentInfo.parentType;
+          if (!virtualParentMap.has(parentKey)) {
+            virtualParentMap.set(parentKey, { children: [], parentGender: parentInfo.parentGender, side: parentInfo.side });
           }
-          virtualParentMap.get(parentInfo.parentType)!.children.push(nn);
+          virtualParentMap.get(parentKey)!.children.push(nn);
         });
 
         interface PoolMember {
@@ -1336,6 +1338,9 @@ export function calculateInheritance(
           } else if (member.virtualParentKey) {
             const group = virtualParentMap.get(member.virtualParentKey)!;
             const isMaternal = member.isMaternal;
+            const displayParentKey = member.virtualParentKey.includes('::')
+              ? member.virtualParentKey.split('::')[1]
+              : (translations[language][member.virtualParentKey as keyof typeof translations.ar] || member.virtualParentKey);
 
             if (group.children.length === 1) {
               const child = group.children[0];
@@ -1346,12 +1351,12 @@ export function calculateInheritance(
               } else {
                 actualTarget = isMaleChild ? t('maternalSonRef') : t('maternalDaughterRef');
               }
-              const note = `${t('remainderLabel')} ${language === 'ar' ? 'على' : language === 'ur' ? 'پر' : 'on'} ${member.units}/${totalPoolUnits} (${member.virtualParentKey}) ${t('connectorBranch')} ${actualTarget}`;
+              const note = `${t('remainderLabel')} ${language === 'ar' ? 'على' : language === 'ur' ? 'پر' : 'on'} ${member.units}/${totalPoolUnits} (${displayParentKey}) ${t('connectorBranch')} ${actualTarget}`;
               shareMap[child.id] = { note, percentage: memberShare };
             } else {
               const childRef = group.parentGender === 'male' ? t('sonDaughterRef') : t('maternalSonDaughterRef');
               const rule = (isMaternal || group.parentGender === 'female') ? t('ruleEqual') : t('ruleMaleDouble');
-              const note = `${t('remainderLabel')} ${language === 'ar' ? 'على' : language === 'ur' ? 'پر' : 'on'} ${member.units}/${totalPoolUnits} (${member.virtualParentKey}) ${t('connectorBranch')} ${childRef} ${rule}`;
+              const note = `${t('remainderLabel')} ${language === 'ar' ? 'على' : language === 'ur' ? 'پر' : 'on'} ${member.units}/${totalPoolUnits} (${displayParentKey}) ${t('connectorBranch')} ${childRef} ${rule}`;
               
               const internalUnits = isMaternal || group.parentGender === 'female' ? group.children.length : group.children.reduce((s, c) => s + (getGender(c.type) === 'male' ? 2 : 1), 0);
               const perInternalUnit = memberShare / internalUnits;
@@ -2151,19 +2156,45 @@ export function calculateInheritance(
         maternalPool = remainingPercentage;
       }
 
+      const getPaternalCousinParentInfo = (cousinType: string): { parentType: string; defaultLabel: string; isPaternalUncle: boolean; isParentFemale: boolean } => {
+        const isUncle = cousinType.includes('uncle');
+        const isMaternalSide = cousinType.includes('Maternal');
+        const isPaternalSide = cousinType.endsWith('Paternal');
+        if (isUncle) {
+          if (isMaternalSide) return { defaultLabel: language === 'ar' ? 'عم لأم' : 'Maternal Paternal Uncle', isParentFemale: false, isPaternalUncle: false, parentType: 'unclePaternalMaternal' };
+          if (isPaternalSide) return { defaultLabel: language === 'ar' ? 'عم لأب' : 'Paternal Uncle (Father\'s side)', isParentFemale: false, isPaternalUncle: true, parentType: 'unclePaternalPaternal' };
+          return { defaultLabel: language === 'ar' ? 'عم' : 'Paternal Uncle', isParentFemale: false, isPaternalUncle: true, parentType: 'unclePaternal' };
+        } else {
+          if (isMaternalSide) return { defaultLabel: language === 'ar' ? 'عمة لأم' : 'Maternal Paternal Aunt', isParentFemale: true, isPaternalUncle: false, parentType: 'auntPaternalMaternal' };
+          if (isPaternalSide) return { defaultLabel: language === 'ar' ? 'عمة لأب' : 'Paternal Aunt (Father\'s side)', isParentFemale: true, isPaternalUncle: false, parentType: 'auntPaternalPaternal' };
+          return { defaultLabel: language === 'ar' ? 'عمة' : 'Paternal Aunt', isParentFemale: true, isPaternalUncle: false, parentType: 'auntPaternal' };
+        }
+      };
+
+      const getMaternalCousinParentInfo = (cousinType: string): { parentType: string; defaultLabel: string; parentGender: 'male' | 'female' } => {
+        const isUncle = cousinType.includes('uncle');
+        const isMaternalSide = cousinType.endsWith('Maternal');
+        const isPaternalSide = cousinType.endsWith('Paternal');
+        if (isUncle) {
+          if (isMaternalSide) return { defaultLabel: language === 'ar' ? 'خال لأم' : 'Maternal Uncle (Mother\'s side)', parentGender: 'male', parentType: 'uncleMaternalMaternal' };
+          if (isPaternalSide) return { defaultLabel: language === 'ar' ? 'خال لأب' : 'Maternal Uncle (Father\'s side)', parentGender: 'male', parentType: 'uncleMaternalPaternal' };
+          return { defaultLabel: language === 'ar' ? 'خال' : 'Maternal Uncle', parentGender: 'male', parentType: 'uncleMaternal' };
+        } else {
+          if (isMaternalSide) return { defaultLabel: language === 'ar' ? 'خالة لأم' : 'Maternal Aunt (Mother\'s side)', parentGender: 'female', parentType: 'auntMaternalMaternal' };
+          if (isPaternalSide) return { defaultLabel: language === 'ar' ? 'خالة لأب' : 'Maternal Aunt (Father\'s side)', parentGender: 'female', parentType: 'auntMaternalPaternal' };
+          return { defaultLabel: language === 'ar' ? 'خالة' : 'Maternal Aunt', parentGender: 'female', parentType: 'auntMaternal' };
+        }
+      };
+
       // 1. Process Paternal Cousins
       if (paternalPool > 0 && activePaternalCousins.length > 0) {
-        const virtualPaternalMap = new Map<string, { isPaternalUncle: boolean; children: HeirDetail[] }>();
+        const virtualPaternalMap = new Map<string, { isPaternalUncle: boolean; isParentFemale: boolean; children: HeirDetail[] }>();
         activePaternalCousins.forEach(pc => {
-          const defaultParent = pc.type.includes('uncle') ? 'عم' : 'عمة';
+          const info = getPaternalCousinParentInfo(pc.type);
           const parentNameStr = pc.parentName ? pc.parentName.trim() : '';
-          const parentType = pc.type.includes('uncle') ? 'unclePaternal' : 'auntPaternal';
-          const parentKey = parentNameStr ? `${parentType}::${parentNameStr}` : defaultParent;
+          const parentKey = `${info.parentType}::${parentNameStr || info.defaultLabel}`;
           if (!virtualPaternalMap.has(parentKey)) {
-            const isUncle = pc.type.includes('uncle');
-            const isMaternalSide = pc.type.includes('Maternal');
-            const isPaternalUncle = isUncle && !isMaternalSide;
-            virtualPaternalMap.set(parentKey, { children: [], isPaternalUncle });
+            virtualPaternalMap.set(parentKey, { children: [], isParentFemale: info.isParentFemale, isPaternalUncle: info.isPaternalUncle });
           }
           virtualPaternalMap.get(parentKey)!.children.push(pc);
         });
@@ -2179,7 +2210,17 @@ export function calculateInheritance(
           const parentShare = perPaternalUnit * (group.isPaternalUncle ? 2 : 1);
           const actualParentKeyShow = parentKey.includes('::') ? parentKey.split('::')[1] : parentKey;
           
-          if (!group.isPaternalUncle) {
+          if (group.children.length === 1) {
+            const child = group.children[0];
+            const isMale = getGender(child.type) === 'male';
+            const childTargetAr = group.isParentFemale
+              ? (isMale ? 'لابنها' : 'لابنتها')
+              : (isMale ? 'لابنه' : 'لابنته');
+            const note = language === 'ar'
+              ? `نصيب من تقرب به (${actualParentKeyShow}) يذهب ${childTargetAr}`
+              : (language === 'ur' ? `(${actualParentKeyShow}) کا حصہ اس کے بیٹے/بیٹی کو` : `Share of (${actualParentKeyShow})`);
+            shareMap[child.id] = { note, percentage: parentShare };
+          } else if (!group.isPaternalUncle) {
             const sharePerChild = parentShare / group.children.length;
             group.children.forEach(child => {
               const note = language === 'ar' ? `نصيب من تقرب به (${actualParentKeyShow}) يوزع بالتساوي` : (language === 'ur' ? `(${actualParentKeyShow}) کا حصہ برابر تقسیم` : `Share of (${actualParentKeyShow}) distributed equally`);
@@ -2201,13 +2242,11 @@ export function calculateInheritance(
       if (maternalPool > 0 && activeMaternalCousins.length > 0) {
         const virtualMaternalMap = new Map<string, { parentGender: 'male' | 'female'; children: HeirDetail[] }>();
         activeMaternalCousins.forEach(mc => {
-          const defaultParent = mc.type.includes('uncle') ? 'خال' : 'خالة';
+          const info = getMaternalCousinParentInfo(mc.type);
           const parentNameStr = mc.parentName ? mc.parentName.trim() : '';
-          const parentType = mc.type.includes('uncle') ? 'uncleMaternal' : 'auntMaternal';
-          const parentKey = parentNameStr ? `${parentType}::${parentNameStr}` : defaultParent;
+          const parentKey = `${info.parentType}::${parentNameStr || info.defaultLabel}`;
           if (!virtualMaternalMap.has(parentKey)) {
-            const parentGender: 'male' | 'female' = mc.type.includes('uncle') ? 'male' : 'female';
-            virtualMaternalMap.set(parentKey, { children: [], parentGender });
+            virtualMaternalMap.set(parentKey, { children: [], parentGender: info.parentGender });
           }
           virtualMaternalMap.get(parentKey)!.children.push(mc);
         });
@@ -2220,8 +2259,17 @@ export function calculateInheritance(
           const sharePerChild = parentShare / group.children.length;
           const actualParentKeyShow = parentKey.includes('::') ? parentKey.split('::')[1] : parentKey;
           group.children.forEach(child => {
-            const note = language === 'ar' ? `نصيب من تقرب به (${actualParentKeyShow}) يوزع بالتساوي` : (language === 'ur' ? `(${actualParentKeyShow}) کا حصہ برابر تقسیم` : `Share of (${actualParentKeyShow}) distributed equally`);
-            shareMap[child.id] = { note, percentage: sharePerChild };
+            if (group.children.length === 1 && language === 'ar') {
+              const isMale = getGender(child.type) === 'male';
+              const childTargetAr = group.parentGender === 'female'
+                ? (isMale ? 'لابنها' : 'لابنتها')
+                : (isMale ? 'لابنه' : 'لابنته');
+              const note = `نصيب من تقرب به (${actualParentKeyShow}) يذهب ${childTargetAr}`;
+              shareMap[child.id] = { note, percentage: sharePerChild };
+            } else {
+              const note = language === 'ar' ? `نصيب من تقرب به (${actualParentKeyShow}) يوزع بالتساوي` : (language === 'ur' ? `(${actualParentKeyShow}) کا حصہ برابر تقسیم` : `Share of (${actualParentKeyShow}) distributed equally`);
+              shareMap[child.id] = { note, percentage: sharePerChild };
+            }
           });
         });
       }

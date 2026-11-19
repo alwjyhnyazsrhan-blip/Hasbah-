@@ -687,29 +687,35 @@ export function App() {
         ];
 
         const grandchildrenTypes = ['sonOfSon', 'daughterOfSon', 'sonOfDaughter', 'daughterOfDaughter'];
-        const nephewNieceTypes = [
-          'brotherSon', 'sisterSon', 'brotherSonMaternal', 'sisterSonMaternal', 'brotherSonPaternal', 'sisterSonPaternal',
-          'brotherDaughter', 'sisterDaughter', 'brotherDaughterMaternal', 'sisterDaughterMaternal', 'brotherDaughterPaternal', 'sisterDaughterPaternal'
-        ];
-        const paternalCousinTypes = [
-          'unclePaternalSon', 'unclePaternalDaughter', 'auntPaternalSon', 'auntPaternalDaughter',
-          'unclePaternalSonPaternal', 'unclePaternalSonMaternal', 'unclePaternalDaughterPaternal', 'unclePaternalDaughterMaternal',
-          'auntPaternalSonMaternal', 'auntPaternalSonPaternal' as any, 'auntPaternalDaughterPaternal', 'auntPaternalDaughterMaternal'
-        ];
-        const maternalCousinTypes = [
-          'uncleMaternalSon', 'uncleMaternalDaughter', 'auntMaternalSon', 'auntMaternalDaughter',
-          'uncleMaternalSonPaternal', 'uncleMaternalSonMaternal', 'uncleMaternalDaughterPaternal', 'uncleMaternalDaughterMaternal',
-          'auntMaternalSonPaternal', 'auntMaternalSonMaternal', 'auntMaternalDaughterPaternal', 'auntMaternalDaughterMaternal'
-        ];
+        const getParentCategoryGroup = (type: string): string[] => {
+          const categoryGroups: string[][] = [
+            ['sonOfSon', 'daughterOfSon'],
+            ['sonOfDaughter', 'daughterOfDaughter'],
+            ['brotherSon', 'brotherDaughter'],
+            ['sisterSon', 'sisterDaughter'],
+            ['brotherSonPaternal', 'brotherDaughterPaternal'],
+            ['sisterSonPaternal', 'sisterDaughterPaternal'],
+            ['brotherSonMaternal', 'brotherDaughterMaternal'],
+            ['sisterSonMaternal', 'sisterDaughterMaternal'],
+            ['unclePaternalSon', 'unclePaternalDaughter'],
+            ['auntPaternalSon', 'auntPaternalDaughter'],
+            ['unclePaternalSonPaternal', 'unclePaternalDaughterPaternal'],
+            ['auntPaternalSonPaternal', 'auntPaternalDaughterPaternal'],
+            ['unclePaternalSonMaternal', 'unclePaternalDaughterMaternal'],
+            ['auntPaternalSonMaternal', 'auntPaternalDaughterMaternal'],
+            ['uncleMaternalSon', 'uncleMaternalDaughter'],
+            ['auntMaternalSon', 'auntMaternalDaughter'],
+            ['uncleMaternalSonPaternal', 'uncleMaternalDaughterPaternal'],
+            ['auntMaternalSonPaternal', 'auntMaternalDaughterPaternal'],
+            ['uncleMaternalSonMaternal', 'uncleMaternalDaughterMaternal'],
+            ['auntMaternalSonMaternal', 'auntMaternalDaughterMaternal'],
+          ];
+          return categoryGroups.find(g => g.includes(type)) || [];
+        };
 
         const getGroupCount = (type: string) => {
-          let targetGroup: string[] = [];
-          if (grandchildrenTypes.includes(type)) targetGroup = grandchildrenTypes;
-          else if (nephewNieceTypes.includes(type)) targetGroup = nephewNieceTypes;
-          else if (paternalCousinTypes.includes(type)) targetGroup = paternalCousinTypes;
-          else if (maternalCousinTypes.includes(type)) targetGroup = maternalCousinTypes;
-          else return 0;
-          
+          const targetGroup = getParentCategoryGroup(type);
+          if (targetGroup.length === 0) return 0;
           return heirDetails.filter(hd => 
             targetGroup.includes(hd.type) && !results.find(r => r.heirId === hd.id)?.isBlocked
           ).length;
@@ -1384,27 +1390,30 @@ export function App() {
                                                            <div className="flex flex-col gap-1">
                                                              {(() => {
                                                               const activeOfTypeGroup = (() => {
-                                                                const grandchildrenTypes = ['sonOfSon', 'daughterOfSon', 'sonOfDaughter', 'daughterOfDaughter'];
-                                                                const nephewNieceTypes = [
-                                                                  'brotherSon', 'sisterSon', 'brotherSonMaternal', 'sisterSonMaternal', 'brotherSonPaternal', 'sisterSonPaternal',
-                                                                  'brotherDaughter', 'sisterDaughter', 'brotherDaughterMaternal', 'sisterDaughterMaternal', 'brotherDaughterPaternal', 'sisterDaughterPaternal'
+                                                                const categoryGroups: string[][] = [
+                                                                  ['sonOfSon', 'daughterOfSon'],
+                                                                  ['sonOfDaughter', 'daughterOfDaughter'],
+                                                                  ['brotherSon', 'brotherDaughter'],
+                                                                  ['sisterSon', 'sisterDaughter'],
+                                                                  ['brotherSonPaternal', 'brotherDaughterPaternal'],
+                                                                  ['sisterSonPaternal', 'sisterDaughterPaternal'],
+                                                                  ['brotherSonMaternal', 'brotherDaughterMaternal'],
+                                                                  ['sisterSonMaternal', 'sisterDaughterMaternal'],
+                                                                  ['unclePaternalSon', 'unclePaternalDaughter'],
+                                                                  ['auntPaternalSon', 'auntPaternalDaughter'],
+                                                                  ['unclePaternalSonPaternal', 'unclePaternalDaughterPaternal'],
+                                                                  ['auntPaternalSonPaternal', 'auntPaternalDaughterPaternal'],
+                                                                  ['unclePaternalSonMaternal', 'unclePaternalDaughterMaternal'],
+                                                                  ['auntPaternalSonMaternal', 'auntPaternalDaughterMaternal'],
+                                                                  ['uncleMaternalSon', 'uncleMaternalDaughter'],
+                                                                  ['auntMaternalSon', 'auntMaternalDaughter'],
+                                                                  ['uncleMaternalSonPaternal', 'uncleMaternalDaughterPaternal'],
+                                                                  ['auntMaternalSonPaternal', 'auntMaternalDaughterPaternal'],
+                                                                  ['uncleMaternalSonMaternal', 'uncleMaternalDaughterMaternal'],
+                                                                  ['auntMaternalSonMaternal', 'auntMaternalDaughterMaternal'],
                                                                 ];
-                                                                const paternalCousinTypes = [
-                                                                  'unclePaternalSon', 'unclePaternalDaughter', 'auntPaternalSon', 'auntPaternalDaughter',
-                                                                  'unclePaternalSonPaternal', 'unclePaternalSonMaternal', 'unclePaternalDaughterPaternal', 'unclePaternalDaughterMaternal',
-                                                                  'auntPaternalSonMaternal', 'auntPaternalSonPaternal' as any, 'auntPaternalDaughterPaternal', 'auntPaternalDaughterMaternal'
-                                                                ];
-                                                                const maternalCousinTypes = [
-                                                                  'uncleMaternalSon', 'uncleMaternalDaughter', 'auntMaternalSon', 'auntMaternalDaughter',
-                                                                  'uncleMaternalSonPaternal', 'uncleMaternalSonMaternal', 'uncleMaternalDaughterPaternal', 'uncleMaternalDaughterMaternal',
-                                                                  'auntMaternalSonPaternal', 'auntMaternalSonMaternal', 'auntMaternalDaughterPaternal', 'auntMaternalDaughterMaternal'
-                                                                ];
-                                                                let targetGroup: string[] = [];
-                                                                if (grandchildrenTypes.includes(heir.type)) targetGroup = grandchildrenTypes;
-                                                                else if (nephewNieceTypes.includes(heir.type)) targetGroup = nephewNieceTypes;
-                                                                else if (paternalCousinTypes.includes(heir.type)) targetGroup = paternalCousinTypes;
-                                                                else if (maternalCousinTypes.includes(heir.type)) targetGroup = maternalCousinTypes;
-                                                                else return [];
+                                                                const targetGroup = categoryGroups.find(g => g.includes(heir.type)) || [];
+                                                                if (targetGroup.length === 0) return [];
                                                                 
                                                                 return heirDetails.filter(hd => 
                                                                   targetGroup.includes(hd.type) && !results.find(r => r.heirId === hd.id)?.isBlocked
