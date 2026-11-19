@@ -1,0 +1,6 @@
+{
+  "name": "حاسبة المواريث الإسماعيلية",
+  "description": "Ismaili Inheritance Calculator - حاسبة شاملة للمواريث والإرث الإسماعيلي بلغات متعددة مع طباعة التقارير والنتائج بالتفصيل.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
