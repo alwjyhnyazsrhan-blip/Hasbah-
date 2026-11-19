@@ -770,8 +770,11 @@ export function calculateInheritance(
 
                   const fractionLabel = trans.twoThirdsLabel;
                   const onLabel = language === 'ar' ? 'على' : (language === 'ur' ? 'پر' : 'on');
+                  const raddSuffix = totalRaddFard < 0.9999
+                    ? ` ${language === 'ar' ? 'والباقي يرد عليهم حسب سهامهم' : (language === 'ur' ? 'اور باقی ان کے حصص کے مطابق واپس' : 'and the remainder is returned proportionally')}`
+                    : '';
                   
-                  note = `${fractionLabel} ${onLabel} ${totalSharesLabel} ${parentGenderVerb} (${parentNameToShow}) ${onLabel} ${trans.shareSingular} ${trans.connectorBranch} ${internalDist} ${language === 'ar' ? 'والباقي يرد عليهم حسب سهامهم' : (language === 'ur' ? 'اور باقی ان کے حصص کے مطابق واپس' : 'and the remainder is returned proportionally')}`;
+                  note = `${fractionLabel} ${onLabel} ${totalSharesLabel} ${parentGenderVerb} (${parentNameToShow}) ${onLabel} ${trans.shareSingular} ${trans.connectorBranch} ${internalDist}${raddSuffix}`;
                 }
                 shareMap[h.id] = { note, percentage: perChild };
               });
@@ -799,10 +802,10 @@ export function calculateInheritance(
             const activeSonOfDaughter = heirDetails.some(h => h.type === 'sonOfDaughter' && !blockingResults[h.id]?.isBlocked);
             const activeDaughterOfDaughter = heirDetails.some(h => h.type === 'daughterOfDaughter' && !blockingResults[h.id]?.isBlocked);
 
-            if (activeSonOfDaughter && activeDaughterOfDaughter) {
-              motherNote = t('motherNoteSixthRaddAll');
-            } else if (branchCount >= 2 && raddParentCount >= 2) {
+            if (branchCount >= 2 && raddParentCount >= 2) {
               motherNote = t('motherNoteSixthComplete');
+            } else if (activeSonOfDaughter && activeDaughterOfDaughter) {
+              motherNote = t('motherNoteSixthRaddAll');
             } else if (branchCount >= 2 || raddGroup.length >= 3) {
               motherNote = t('motherNoteSixthRaddAll');
             } else {
